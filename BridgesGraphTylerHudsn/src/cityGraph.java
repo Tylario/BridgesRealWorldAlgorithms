@@ -61,6 +61,8 @@ public class cityGraph
         {
             String cityId = city.getCity() + ", " + city.getState();
             graph.addVertex(cityId, cityId);
+            graph.getVertex(cityId).setLocation(city.getLongitude(), city.getLatitude());
+
         }
     
         // edges for each pair of cities
@@ -187,15 +189,39 @@ public class cityGraph
             String parentNode = parent.get(current);
             if (parentNode != null) 
             {
-                // add current node and its parent to the new graph, if not already added
+                double scaleFactor = 50; // to scale up the cities (they are too close to eachother)
+
+                // find the center, so it will appear on the bridges visualization 
+                double sumLat = 0, sumLong = 0;
+                for (City city : cities) {
+                    sumLat += city.getLatitude() * scaleFactor;
+                    sumLong += city.getLongitude() * scaleFactor;
+                }
+                
+                double avgLat = sumLat / cities.size();
+                double avgLong = sumLong / cities.size();
+                double translateLat = avgLat;
+                double translateLong = avgLong;
+                
                 if (!pathGraph.getVertices().containsKey(current)) 
                 {
                     pathGraph.addVertex(current, current);
+                    City currentCity = findCityById(cities, current);
+                    if (currentCity != null) {
+                        double scaledTranslatedLat = currentCity.getLatitude() * scaleFactor + translateLat;
+                        double scaledTranslatedLong = currentCity.getLongitude() * scaleFactor + translateLong;
+                        pathGraph.getVertex(current).setLocation(scaledTranslatedLong, scaledTranslatedLat);
+                    }
                 }
-
-                if (!pathGraph.getVertices().containsKey(parentNode)) 
-                {
+                
+                if (!pathGraph.getVertices().containsKey(parentNode)) {
                     pathGraph.addVertex(parentNode, parentNode);
+                    City parentNodeCity = findCityById(cities, parentNode);
+                    if (parentNodeCity != null) {
+                        double scaledTranslatedLat = parentNodeCity.getLatitude() * scaleFactor + translateLat;
+                        double scaledTranslatedLong = parentNodeCity.getLongitude() * scaleFactor + translateLong;
+                        pathGraph.getVertex(parentNode).setLocation(scaledTranslatedLong, scaledTranslatedLat);
+                    }
                 }
                 
                 // add edge between the current node and its parent
